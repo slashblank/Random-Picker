@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Picker</title>
+    <style>
+        /* 공통 스타일 설정 */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f9;
+        }
+
+        #app {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            background: #f4f4f9;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+
+        li span {
+            font-weight: bold;
+            margin-left: 3px;
+        }
+
+        /* 입력 필드와 버튼 스타일 */
+        input {
+            height: 50px;
+            width: 150px;
+            padding: 0 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        select {
+            height: 50px;
+            width: 80px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            height: 50px;
+            width: 80px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* 버튼 스타일 */
+        .primary-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .success-btn {
+            background-color: #28a745; /* 뽑기 버튼: 초록색 */
+            color: white;
+        }
+
+        .success-btn:hover {
+            background-color: #218838;
+        }
+
+        .reset-btn {
+            background-color: #FF4500; /* 초기화 버튼: 진한 주황색 */
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background-color: #E03C00;
+        }
+
+        .danger-btn {
+            background-color: #dc3545;
+            font-size: 10px;
+            height: 25px;
+            width: 40px;
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .danger-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* 한 줄 배치 스타일 */
+        .input-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #result-wrapper {
+            background: #f4f4f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #result-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        #result-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .winner-box {
+            padding: 10px;
+            border-radius: 5px;
+            background: #333333;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .result-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .empty-message {
+            color: #aaa;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h2>참여자 관리</h2>
+        <div class="input-row">
+            <input type="text" id="nickname" placeholder="닉네임 입력">
+            <button id="add-participant" class="primary-btn">추가</button>
+            <select id="winner-count">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+            <button id="pick-manual" class="success-btn">뽑기</button>
+        </div>
+        <ul id="participants-list"></ul>
+        <div id="result-wrapper">
+            <div id="result-title">당첨자</div>
+            <div id="result-container" class="empty-message">참여자를 추가하고 뽑기를 누르세요</div>
+        </div>
+        <div class="result-actions">
+            <button id="copy-result" class="primary-btn">결과 복사</button>
+            <button id="reset-manual" class="reset-btn">초기화</button>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let idCounter = 1;
+
+        const participantsList = document.getElementById('participants-list');
+        const resultContainer = document.getElementById('result-container');
+        const copyResultButton = document.getElementById('copy-result');
+
+        // 참여자 추가 로직
+        document.getElementById('add-participant').onclick = () => {
+            const nickname = document.getElementById('nickname').value.trim();
+            if (nickname) {
+                const id = idCounter++;
+                participants.push({ id, nickname });
+                updateParticipantsList();
+                document.getElementById('nickname').value = '';
+            }
+        };
+
+        // 참여자 리스트 업데이트
+        const updateParticipantsList = () => {
+            participantsList.innerHTML = '';
+            participants.forEach(({ id, nickname }) => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <span>${nickname}(${id})</span>
+                    <button class="danger-btn" onclick="removeParticipant(${id})">삭제</button>
+                `;
+                participantsList.appendChild(listItem);
+            });
+        };
+
+        // 참여자 삭제 로직
+        window.removeParticipant = (id) => {
+            participants = participants.filter((p) => p.id !== id);
+            updateParticipantsList();
+        };
+
+        // 추첨 로직
+        document.getElementById('pick-manual').onclick = () => {
+            const count = parseInt(document.getElementById('winner-count').value, 10);
+            if (isNaN(count) || count <= 0 || count > participants.length) {
+                alert('참여자 수보다 적거나 동일한 당첨자 수를 선택하세요!');
+                return;
+            }
+            const shuffled = participants.sort(() => Math.random() - 0.5);
+            const winners = shuffled.slice(0, count);
+            displayWinners(winners);
+        };
+
+        // 당첨자 표시 로직
+        const displayWinners = (winners) => {
+            resultContainer.innerHTML = '';
+            resultContainer.classList.remove('empty-message');
+            winners.forEach(({ id, nickname }) => {
+                const winnerBox = document.createElement('div');
+                winnerBox.className = 'winner-box';
+                winnerBox.textContent = `${nickname}(${id})`;
+                resultContainer.appendChild(winnerBox);
+            });
+        };
+
+        // 결과 복사 로직
+        copyResultButton.onclick = () => {
+            const winnersText = `당첨자: ` + Array.from(resultContainer.children)
+                .map((box) => box.textContent)
+                .join(', ');
+            navigator.clipboard.writeText(winnersText)
+                .then(() => alert('결과가 클립보드에 복사되었습니다!'))
+                .catch(() => alert('복사 실패. 다시 시도해주세요.'));
+        };
+
+        // 초기화 로직
+        document.getElementById('reset-manual').onclick = () => {
+            participants = [];
+            idCounter = 1;
+            updateParticipantsList();
+            document.getElementById('winner-count').value = '1'; // 기본값 1로 재설정
+            resultContainer.innerHTML = '참여자를 추가하고 뽑기를 누르세요';
+            resultContainer.classList.add('empty-message');
+        };
+    </script>
+</body>
+</html>
